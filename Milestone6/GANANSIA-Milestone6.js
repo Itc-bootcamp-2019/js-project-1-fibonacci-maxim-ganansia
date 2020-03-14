@@ -1,10 +1,39 @@
 
 let mybutton = document.getElementById("mybtn");
-mybutton.addEventListener("click", callServer);
+mybutton.addEventListener("click", saveCalculation);
 
 const result = document.getElementById("result")
 const loader = document.getElementById("loader")
 const numberError = document.getElementById("numberError")
+
+const buttonClicked = document.getElementById("exampleCheck1");
+
+
+
+// Checkbox
+function saveCalculation() {
+    let x = document.getElementById("number").value;
+    let buttonClicked = document.getElementById("exampleCheck1");
+    if (buttonClicked.checked) {
+        callServer(x);
+    } else {
+        fibonacci(x);
+    }
+}
+
+
+function fibonacci(x) {
+    let a = 0;
+    let b = 1;
+    let result = 0;
+
+    for (let i = 0; i < x; i++) {
+        result = a + b;
+        b = a;
+        a = result;
+    }
+    document.getElementById("result").innerText = a;
+}
 
 
 
@@ -15,10 +44,10 @@ function callServer() {
     numberError.innerHTML = '';
     numberError.classList.add("hidden");
 
-    const number = Number(document.getElementById("number").value);
+    const number = parseInt(document.getElementById("number").value);
 
     if (number > 50) {
-        numberError.innerHTML = "The number cant be higher than 50";
+        numberError.innerHTML = "can't be larger than 50";
         numberError.classList.remove("hidden");
         loader.classList.add("hidden");
     } else {
@@ -26,36 +55,51 @@ function callServer() {
             .then(response => {
                 if (response.ok) {
                     return response.json()
-                }
-
-                return response.text()
-            })
-            .then(response => {
-                if (typeof response === "object") {
-                    result.innerHTML = response.result;
+                        .then(response => {
+                            result.innerHTML = response.result;
+                            getFibResults();
+                        })
                 } else {
-                    result.innerHTML = `Server Error: ${response}`;
-                    result.classList.add("error");
+                    return response.text()
+                        .then(response => {
+                            result.innerHTML = `Server Error: ${response}`;
+                            result.classList.add("error");
+                        })
                 }
-                loader.classList.add("hidden");
             })
-            .catch(e => {
-                console.error(e);
-            })
-
+        loader.classList.add("hidden");
     }
-
 }
 
 
-// fetch("http://httpstat.us/500")
-//     .then(function(response) {
-//         if (!response.ok) {
-//             throw Error(response.statusText);
-//         }
-//         return response;
-//     }).then(function(response) {
-//         console.log("ok");
-//     }).catch(function(error) {
-//         console.log(error);
-//     });
+
+function getFibResults() {
+    loader2.classList.remove("hidden");
+    fetch(`http://localhost:5050/getFibonacciResults`)
+        .then(response => {
+            return response.json();
+        })
+        .then(data => {
+            let sortedList = data.results.sort((a, b) => resultsSorted(a, b));
+            let lastElementList = sortedList.pop();
+            let dataList = document.getElementById("dataList");
+            let date = new Date(lastElementList.createdDate);
+            let liElement = document.createElement("li");
+            liElement.innerHTML = `The Fibonacci of <b>${lastElementList.number}` +
+                `</b> is <b>${lastElementList.result}` + `</b> Calculated at: ${date}`; 
+            dataList.prepend(liElement);
+            loader2.classList.add("hidden");
+        });
+}
+
+
+
+function resultsSorted(a, b) {
+    if (a.createdDate > b.createdDate) {
+        return 1
+    } else if (b.createdDate > a.createdDate) {
+        return -1
+    } else {
+        return 0
+    }
+};
